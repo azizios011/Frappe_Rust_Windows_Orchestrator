@@ -38,3 +38,7 @@ node_modules/
 
 # Internal placeholder (re-create if needed)
 .tauri-note
+src-tauri/Bundle/ubuntu-26.04-wsl-amd64.7z
+src-tauri/Bundle/ubuntu-26.04-wsl-amd64.tar
+src-tauri/Bundle/ubuntu-26.04-wsl-amd64.wsl
+src-tauri/Bundle/ubuntu-26.04-wsl-amd64.zip
