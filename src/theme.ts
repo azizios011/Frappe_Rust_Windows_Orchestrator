@@ -35,17 +35,24 @@ paint(prefersDark() ? 'dark' : 'light')
 
 /** Adopt the Tauri window theme and keep tracking live OS appearance changes. */
 export async function watchTheme(): Promise<void> {
-  try {
-    const win = getCurrentWindow()
-    const current = await win.theme()
+  if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+    try {
+      const win = getCurrentWindow()
+      const current = await win.theme()
 
-    if (current) {
-      paint(current)
+      if (current) {
+        paint(current)
+      }
+
+      await win.onThemeChanged(({ payload }) => paint(payload))
+      return
+    } catch {
+      // Fallback to media query below
     }
+  }
 
-    await win.onThemeChanged(({ payload }) => paint(payload))
-  } catch {
-    // Non-Tauri context (e.g. `vite preview`): keep the media query live.
+  // Non-Tauri context (e.g. web browser / preview): keep the media query live.
+  if (typeof window !== 'undefined' && window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => paint(e.matches ? 'dark' : 'light'))
   }
 }

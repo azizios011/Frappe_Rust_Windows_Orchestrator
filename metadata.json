@@ -1,0 +1,8 @@
+{
+  "name": "Hermes Setup Orchestrator",
+  "description": "Installer and setup orchestrator for Hermes Agent with live progress streaming, diagnostics, and desktop bootstrap workflow.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

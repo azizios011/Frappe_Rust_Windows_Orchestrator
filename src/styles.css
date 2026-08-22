@@ -27,6 +27,52 @@
  */
 @import 'tailwindcss';
 
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-midground: var(--midground);
+  --color-ring: var(--ring);
+}
+
+:root {
+  color-scheme: light dark;
+
+  --background: #fdfbf7;
+  --foreground: #1c2438;
+  --primary: #12378f;
+  --primary-foreground: #ffffff;
+  --secondary: #e6ebf5;
+  --secondary-foreground: #12378f;
+  --muted: #f0f4fa;
+  --muted-foreground: #64748b;
+  --destructive: #c0473a;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --ring: #12378f;
+  --midground: #12378f;
+
+  --ui-warm: #f6ebd8;
+  --ui-bg-tertiary: #e2e8f0;
+  --ui-bg-quaternary: #cbd5e1;
+  --stroke-nous: rgba(18, 55, 143, 0.15);
+  --ui-text-primary: #1c2438;
+  --ui-text-secondary: #64748b;
+  --chrome-action-hover: rgba(18, 55, 143, 0.06);
+
+  --dt-primary-foreground: #ffffff;
+  --dt-destructive: #c0473a;
+  --dt-destructive-foreground: #fef2f2;
+}
+
 /* Installer-only additions: a fade-in animation and a warm radial glow
    for the welcome screen. Everything else inherits from the desktop. */
 @keyframes hermes-fade-in {
@@ -52,22 +98,55 @@
   );
 }
 
+.fit-text {
+  display: block;
+  font-size: clamp(var(--fit-text-min, 2rem), 6.5vw, var(--fit-text-max, 5rem));
+}
+
+.fit-text > span:last-child {
+  display: none;
+}
+
+@keyframes shimmer-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.shimmer {
+  animation: shimmer-pulse 2s ease-in-out infinite;
+}
+
 /*
  * Dark appearance — Nous dark seeds.
- *
- * The imported desktop :root.dark only flips the per-mode mix knobs + neutral
- * chrome; the seed COLORS are normally painted at runtime by the desktop's
- * applyTheme(). The installer has no theme runtime, so we mirror them here from
- * apps/desktop/src/themes/presets.ts (nousTheme.darkColors). The whole
- * --ui-* / --dt-* chain in the imported stylesheet derives from these seeds, so
- * flipping them is enough — we only additionally override the few tokens
- * applyTheme() sets inline that DON'T derive from a seed (primary-foreground on
- * the cream accent, destructive). Unlayered on purpose so it wins over the
- * imported @layer base :root light seeds. Keep in sync with nousTheme.darkColors
- * if that palette is retuned.
  */
 :root.dark {
   color-scheme: dark;
+
+  --background: #081a4d;
+  --foreground: #ffe6cb;
+  --primary: #ffe6cb;
+  --primary-foreground: #0d2f86;
+  --secondary: #1b45a4;
+  --secondary-foreground: #ffe6cb;
+  --muted: #0d2f86;
+  --muted-foreground: #9db2d8;
+  --destructive: #f87171;
+  --destructive-foreground: #081a4d;
+  --border: rgba(255, 230, 203, 0.15);
+  --ring: #ffe6cb;
+  --midground: #3b82f6;
+
+  --ui-warm: #ffe6cb;
+  --ui-bg-tertiary: #143b91;
+  --ui-bg-quaternary: #1b45a4;
+  --stroke-nous: rgba(255, 230, 203, 0.15);
+  --ui-text-primary: #ffe6cb;
+  --ui-text-secondary: #9db2d8;
+  --chrome-action-hover: rgba(255, 230, 203, 0.08);
 
   --theme-foreground: #ffe6cb;
   --theme-primary: #ffe6cb;

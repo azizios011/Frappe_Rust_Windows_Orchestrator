@@ -23,16 +23,11 @@ export default defineConfig({
   },
   clearScreen: false,
   server: {
-    port: 5175,
+    port: 3000,
     strictPort: true,
-    host: host || '127.0.0.1',
-    hmr: host
-      ? {
-          protocol: 'ws',
-          host,
-          port: 5176
-        }
-      : undefined,
+    host: '0.0.0.0',
+    allowedHosts: true,
+    hmr: false,
     watch: {
       // Don't watch the Rust side — tauri-cli handles it.
       ignored: ['**/src-tauri/**']

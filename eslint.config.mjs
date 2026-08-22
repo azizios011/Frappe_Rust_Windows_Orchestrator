@@ -1,5 +1,14 @@
-import shared from '../../eslint.config.shared.mjs'
+import tseslint from 'typescript-eslint'
 
-export default [
-  ...shared
-]
+export default tseslint.config(
+  {
+    ignores: ['dist/**', 'node_modules/**', 'src-tauri/**']
+  },
+  ...tseslint.configs.recommended,
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off'
+    }
+  }
+)

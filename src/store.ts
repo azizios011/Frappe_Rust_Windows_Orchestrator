@@ -166,6 +166,8 @@ type BootstrapEvent =
   | BootstrapCompleteEvent
   | BootstrapFailedEvent
 
+const isTauri = (): boolean => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
+
 let unlisten: UnlistenFn | null = null
 
 export async function initialize(): Promise<void> {
@@ -175,7 +177,7 @@ export async function initialize(): Promise<void> {
   // browser, no Tauri backend, no real install.
   const fake = fakeMode()
 
-  if (fake) {
+  if (!isTauri() || fake) {
     unlisten = () => {}
     $logPath.set('~/.hermes/logs/bootstrap-installer.log')
     $hermesHome.set('~/.hermes')
@@ -202,90 +204,94 @@ export async function initialize(): Promise<void> {
     console.warn('failed to fetch installer paths', err)
   }
 
-  unlisten = await listen<BootstrapEvent>('bootstrap', (event) => {
-    const payload = event.payload
-    const cur = $bootstrap.get()
+  try {
+    unlisten = await listen<BootstrapEvent>('bootstrap', (event) => {
+      const payload = event.payload
+      const cur = $bootstrap.get()
 
-    switch (payload.type) {
-      case 'manifest': {
-        const stages: Record<string, StageRecord> = {}
-        const order: string[] = []
+      switch (payload.type) {
+        case 'manifest': {
+          const stages: Record<string, StageRecord> = {}
+          const order: string[] = []
 
-        for (const s of payload.stages) {
-          stages[s.name] = { info: s, state: null }
-          order.push(s.name)
-        }
+          for (const s of payload.stages) {
+            stages[s.name] = { info: s, state: null }
+            order.push(s.name)
+          }
 
-        $bootstrap.set({
-          ...cur,
-          status: 'running',
-          protocolVersion: payload.protocolVersion,
-          stages,
-          stageOrder: order,
-          currentStage: null,
-          installRoot: null,
-          error: null,
-          logs: []
-        })
-        $route.set('progress')
-
-        break
-      }
-
-      case 'stage': {
-        if (!cur.stages[payload.name]) {
-          console.warn('stage event for unknown stage', payload.name)
+          $bootstrap.set({
+            ...cur,
+            status: 'running',
+            protocolVersion: payload.protocolVersion,
+            stages,
+            stageOrder: order,
+            currentStage: null,
+            installRoot: null,
+            error: null,
+            logs: []
+          })
+          $route.set('progress')
 
           break
         }
 
-        $bootstrap.set(
-          withStageState(cur, payload.name, payload.state, payload.durationMs, payload.error)
-        )
+        case 'stage': {
+          if (!cur.stages[payload.name]) {
+            console.warn('stage event for unknown stage', payload.name)
 
-        break
-      }
+            break
+          }
 
-      case 'log': {
-        const logs = [...cur.logs, { stage: payload.stage, line: payload.line, stream: payload.stream }]
-        // Keep the rolling buffer bounded so the UI doesn't get OOM'd
-        // during a long install (playwright chromium download is ~10k lines).
-        const trimmed = logs.length > 2000 ? logs.slice(-2000) : logs
-        $bootstrap.set({ ...cur, logs: trimmed })
+          $bootstrap.set(
+            withStageState(cur, payload.name, payload.state, payload.durationMs, payload.error)
+          )
 
-        break
-      }
-
-      case 'complete':
-        $bootstrap.set({
-          ...cur,
-          status: 'completed',
-          installRoot: payload.installRoot,
-          currentStage: null
-        })
-
-        // Install: show the "launch Hermes" success screen. Update: this is a
-        // hand-off — the installer relaunches the desktop and exits within a
-        // few hundred ms, so routing to success just flashes that screen
-        // before the window closes. Stay on progress until we exit.
-        if ($mode.get() !== 'update') {
-          $route.set('success')
+          break
         }
 
-        break
+        case 'log': {
+          const logs = [...cur.logs, { stage: payload.stage, line: payload.line, stream: payload.stream }]
+          // Keep the rolling buffer bounded so the UI doesn't get OOM'd
+          // during a long install (playwright chromium download is ~10k lines).
+          const trimmed = logs.length > 2000 ? logs.slice(-2000) : logs
+          $bootstrap.set({ ...cur, logs: trimmed })
 
-      case 'failed':
-        $bootstrap.set({
-          ...cur,
-          status: 'failed',
-          error: payload.error,
-          currentStage: null
-        })
-        $route.set('failure')
+          break
+        }
 
-        break
-    }
-  })
+        case 'complete':
+          $bootstrap.set({
+            ...cur,
+            status: 'completed',
+            installRoot: payload.installRoot,
+            currentStage: null
+          })
+
+          // Install: show the "launch Hermes" success screen. Update: this is a
+          // hand-off — the installer relaunches the desktop and exits within a
+          // few hundred ms, so routing to success just flashes that screen
+          // before the window closes. Stay on progress until we exit.
+          if ($mode.get() !== 'update') {
+            $route.set('success')
+          }
+
+          break
+
+        case 'failed':
+          $bootstrap.set({
+            ...cur,
+            status: 'failed',
+            error: payload.error,
+            currentStage: null
+          })
+          $route.set('failure')
+
+          break
+      }
+    })
+  } catch (err) {
+    console.warn('failed to register bootstrap event listener', err)
+  }
 
   // Update mode is a hand-off, not a user-initiated flow: the desktop already
   // exited and re-launched us as `--update`. Kick the update immediately so
@@ -302,7 +308,7 @@ export async function initialize(): Promise<void> {
 export async function startInstall(opts?: { branch?: string }): Promise<void> {
   const fake = fakeMode()
 
-  if (fake) {
+  if (!isTauri() || fake) {
     void runFakeBoot(fake === 'failure' ? 'failure' : 'install')
 
     return
@@ -323,7 +329,7 @@ export async function startInstall(opts?: { branch?: string }): Promise<void> {
 }
 
 export async function startUpdate(): Promise<void> {
-  if (fakeMode()) {
+  if (!isTauri() || fakeMode()) {
     void runFakeBoot('update')
 
     return
@@ -338,7 +344,7 @@ export async function startUpdate(): Promise<void> {
 }
 
 export async function cancelInstall(): Promise<void> {
-  if (fakeMode()) {
+  if (!isTauri() || fakeMode()) {
     fakeCancelled = true
 
     return
@@ -348,7 +354,10 @@ export async function cancelInstall(): Promise<void> {
 }
 
 export async function launchHermesDesktop(): Promise<void> {
-  if (fakeMode()) {throw new Error('Preview mode — launching is disabled.')}
+  if (!isTauri() || fakeMode()) {
+    await sleep(600)
+    return
+  }
   const installRoot = $bootstrap.get().installRoot
 
   if (!installRoot) {throw new Error('no install root')}
@@ -356,7 +365,10 @@ export async function launchHermesDesktop(): Promise<void> {
 }
 
 export async function openLogDir(): Promise<void> {
-  if (fakeMode()) {return}
+  if (!isTauri() || fakeMode()) {
+    $route.set('progress')
+    return
+  }
   await invoke('open_log_dir')
 }
 
